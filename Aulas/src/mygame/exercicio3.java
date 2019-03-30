@@ -27,32 +27,18 @@ import java.util.List;
 import com.jme3.scene.Node;
 
 
-/*
-
-Criar um projeto que execute as seguintes ações:
-
-OK - Criar um chão/piso para os ninjas usando um cubo. Aplicar uma textura ao cubo.
-
-Ao teclar G ou o Click do Mouse- > Criar um novo ninja em -X para +X. Ao criar um novo ninja esse começa a mover de -X para + X. Se o ninja chegar em ponto específico qualquer da cena, ele deverá ser removido. Marcar esse ponto na cena com um Cubo.
-
-Ao teclar P -> Para todas as animações da aplicação.
-
-Ao teclar N -> Remove todos os ninjas da cena.
-
-Ao teclas H ->  Remove o ninja mais velho criado da cena.
-
-Ao teclar J  -> Dobra o tamanho do ninha mais novo criado na cena.
-
-*/
 public class exercicio3 extends SimpleApplication implements AnimEventListener  {
-  private AnimChannel channel;
-  private AnimControl control;
+  private AnimChannel channel1;
+  private AnimControl control1;
   private AnimChannel channel2;
   private AnimControl control2;
   Node player1;
   Node player2;
-  int vida1 = 10;
-  int vida2 = 10;
+  int vida1 = 3;
+  int vida2 = 2;
+  boolean player1Vivo = true;
+  boolean player2Vivo = true;
+  boolean endgame = false;
   
 
     public static void main(String[] args) {
@@ -89,10 +75,10 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
         rootNode.attachChild(player1);
         rootNode.attachChild(player2);
         
-        control = player1.getControl(AnimControl.class);
-        control.addListener(this);
-        channel = control.createChannel();
-        channel.setAnim("Walk");
+        control1 = player1.getControl(AnimControl.class);
+        control1.addListener(this);
+        channel1 = control1.createChannel();
+        channel1.setAnim("Walk");
         
         System.out.println(player2.getControl(AnimControl.class).getAnimationNames());
         
@@ -101,7 +87,7 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
         channel2 = control2.createChannel();
         channel2.setAnim("Walk");
         
-        
+        initKeys();
         
         /** Load a model. Uses model and texture from jme3-test-data library! */ 
         
@@ -115,12 +101,6 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
     private final ActionListener actionListener = new ActionListener() {
         @Override
         public void onAction(String name, boolean keyPressed, float tpf) {
-            if (name.equals("Walk") && !keyPressed) {
-                if (!channel.getAnimationName().equals("Walk")) {
-                    channel.setAnim("matar", 0.50f);
-                    channel.setLoopMode(LoopMode.Loop);
-                }
-            }
         }
     };
     
@@ -128,12 +108,27 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
         @Override
         public void onAnalog(String name, float value, float tpf) {
             if (isRunning) {
-                
-                if (name.equals("Pause")) {
-                    pause = !pause;
+                if (name.equals("Reiniciar")){
+            channel1.setAnim("Walk", 0.50f);
+            channel1.setLoopMode(LoopMode.DontLoop);
+            channel1.setSpeed(1f);
+
+            channel2.setAnim("Walk", 0.50f);
+            channel2.setLoopMode(LoopMode.DontLoop);
+            channel2.setSpeed(1f);
+  vida1 = 3;
+  vida2 = 2;
+  player1Vivo = true;
+  player2Vivo = true;
+  endgame = false;
                 }
-                if (name.equals("matarKey")) {
-                    matar = !matar;
+                if (name.equals("Criar")) {
+                    Spatial nin = assetManager.loadModel("Models/Ninja/Ninja.mesh.xml");
+                    nin.scale(0.02f);
+                    nin.setLocalTranslation(-3f, 0f, 0f);
+                    nin.rotate(0,FastMath.PI,0);
+                    nin.setName("ninja");
+                    rootNode.attachChild(nin);
                 }
                 
             } else {
@@ -149,16 +144,17 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
 
     /** Custom Keybinding: Map named actions to inputs. */
     private void initKeys() {
-        inputManager.addMapping("matarKey", new KeyTrigger(KeyInput.KEY_SPACE));
-        inputManager.addListener(actionListener, "matar");
+        inputManager.addMapping("Criar",  new KeyTrigger(KeyInput.KEY_G));
+        inputManager.addMapping("Reiniciar", new KeyTrigger(KeyInput.KEY_R));
+        inputManager.addListener(analogListener,"Criar", "Reiniciar");
     }
     @Override
     public void onAnimCycleDone(AnimControl control, AnimChannel channel, String animName) {
         
         if (animName.equals("Walk")) {
-            channel.setAnim("Attack2", 0.50f);
-            channel.setLoopMode(LoopMode.DontLoop);
-            channel.setSpeed(1f);
+            channel1.setAnim("Attack2", 0.50f);
+            channel1.setLoopMode(LoopMode.DontLoop);
+            channel1.setSpeed(1f);
 
             channel2.setAnim("Attack3", 0.50f);
             channel2.setLoopMode(LoopMode.DontLoop);
@@ -167,9 +163,9 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
         
         if (animName.equals("Attack2")) {
             
-            channel.setAnim("Attack2", 0.50f);
-            channel.setLoopMode(LoopMode.DontLoop);
-            channel.setSpeed(1f);
+            channel1.setAnim("Attack2", 0.50f);
+            channel1.setLoopMode(LoopMode.DontLoop);
+            channel1.setSpeed(1f);
             vida2-=1;
         }
         if (animName.equals("Attack2")) {
@@ -178,20 +174,29 @@ public class exercicio3 extends SimpleApplication implements AnimEventListener  
             channel2.setSpeed(3f);
             vida1-=1;
         }
-        if (vida1==0) {
-            channel.setAnim("Death1", 0.50f);
-            channel.setLoopMode(LoopMode.DontLoop);
-            channel.setSpeed(1f);
+        if (vida1==0 && player1Vivo) {
+            channel1.setAnim("Death1", 0.50f);
+            channel1.setLoopMode(LoopMode.DontLoop);
+            channel1.setSpeed(1f);
+            player1Vivo=!player1Vivo;
         }
-        if (vida2==0) {
+        if (vida2==0 && player2Vivo) {
             channel2.setAnim("Death1", 0.50f);
             channel2.setLoopMode(LoopMode.DontLoop);
             channel2.setSpeed(1f);
+            player2Vivo=!player2Vivo;
         }
-        if (animName.equals("Death1") && vida1==0) {
-            channel2.setAnim("Climb", 0.50f);
+        if (vida1!=0 && !player2Vivo) {
+            channel1.setAnim("HighJump", 0.50f);
+            channel1.setLoopMode(LoopMode.DontLoop);
+            channel1.setSpeed(1f);
+            endgame = true;
+        }
+        if (vida2!=0 && !player1Vivo) {
+            channel2.setAnim("Jump", 0.50f);
             channel2.setLoopMode(LoopMode.DontLoop);
             channel2.setSpeed(1f);
+            endgame = true;
         }
         
     }
